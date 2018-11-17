@@ -9,21 +9,8 @@ using IBM.Watson.DeveloperCloud.Utilities;
 using IBM.Watson.DeveloperCloud.Services.SpeechToText.v1;
 using IBM.Watson.DeveloperCloud.DataTypes;
 
-public class Talk : MonoBehaviour {
-
-    #region Watson TextToSpeechの設定
-    [Space(10)]
-    [Header("Watson TextToSpeech Config")]
-    [Tooltip("TextToSpeech service URL")]
-    [SerializeField]
-    private string ttsServiceUrl = "";
-    [Tooltip("The authentication username.")]
-    [SerializeField]
-    private string ttsUsername = "";
-    [Tooltip("The authentication password.")]
-    [SerializeField]
-    private string ttsPassword = "";
-    #endregion
+public class Talk : MonoBehaviour
+{
 
     #region Watson SpeechToTextの設定
     [Space(10)]
@@ -39,27 +26,34 @@ public class Talk : MonoBehaviour {
     private string sttToken = "";
     #endregion
 
-    #region 雑談APIの設定
+    #region TalkAPIの設定
     [Space(10)]
-    [Header("雑談API Config")]
+    [Header("TalkAPI Config")]
     [Tooltip("A3RT API URL")]
     [SerializeField]
     private string a3rtURL = "";
-    [Tooltip("A3RT API TOKEN")]
+    [Tooltip("A3RT API Key")]
     [SerializeField]
     private string a3rtApiKey = "";
     #endregion
 
-
-    #region TTS用変数
-    // TextToSpeech
-    TextToSpeech ttsService;
-    private bool synthesizeTested = false;
+    #region Watson TextToSpeechの設定
+    [Space(10)]
+    [Header("Watson TextToSpeech Config")]
+    [Tooltip("TextToSpeech service URL")]
+    [SerializeField]
+    private string ttsServiceUrl = "";
+    [Tooltip("The authentication username.")]
+    [SerializeField]
+    private string ttsUsername = "";
+    [Tooltip("The authentication password.")]
+    [SerializeField]
+    private string ttsPassword = "";
     #endregion
 
     #region STT用変数
     // SpeechToText
-    SpeechToText sttService;
+    private SpeechToText sttService;
 
     private int recordingRoutine = 0;
     private string microphoneID = null;
@@ -70,11 +64,18 @@ public class Talk : MonoBehaviour {
     private string recognizeText = null;
     #endregion
 
+    #region TTS用変数
+    // TextToSpeech
+    private TextToSpeech ttsService;
+    private bool synthesizeTested = false;
+    #endregion
+
     private Animator anim;
 
     private string animatorTalkState = "close";
 
-    void Start () {
+    void Start()
+    {
         anim = GetComponent<Animator>();
         microphoneID = Microphone.devices[0];
 
@@ -97,19 +98,11 @@ public class Talk : MonoBehaviour {
             StreamMultipart = true
         };
     }
-	
-	// Update is called once per frame
-	void Update () {
-        if (Input.GetKeyDown("s")) {
-            Active = true;
-            StartRecording();
-        }
-    }
 
-    void OnGUI()
+    // Update is called once per frame
+    void Update()
     {
-        GUI.Box(new Rect(Screen.width - 110, 10, 100, 60), "雑談");
-        if (GUI.Button(new Rect(Screen.width - 100, 40, 80, 20), "音声"))
+        if (Input.GetKeyDown("s"))
         {
             Active = true;
             StartRecording();
@@ -122,85 +115,16 @@ public class Talk : MonoBehaviour {
         }
     }
 
-    #region 雑談
-    internal IEnumerator Chat(string text)
+    void OnGUI()
     {
-        Debug.Log("Start Chat");
-        WWWForm form = new WWWForm();
-        form.AddField("apikey", a3rtApiKey);
-        form.AddField("query", text);
-        var url = a3rtURL;
-        var request = UnityWebRequest.Post(url, form);
-        yield return request.SendWebRequest();
-
-        if (request.isHttpError || request.isNetworkError)
+        GUI.Box(new Rect(Screen.width - 110, 10, 100, 60), "雑談");
+        if (GUI.Button(new Rect(Screen.width - 100, 40, 80, 20), "音声"))
         {
-            Debug.LogFormat("chat request failed. {0}", request.error);
+            Active = true;
+            StartRecording();
         }
-        else
-        {
-            if (request.responseCode == 200)
-            {
-                var json = Json.Deserialize(request.downloadHandler.text) as Dictionary<string, object>;
-                if (json.ContainsKey("results"))
-                {
-                    var r = json["results"] as List<object>;
-                    if (r.Count > 0)
-                    {
-                        var c = r[0] as Dictionary<string, object>;
-                        var res = (string)c["reply"];
-                        Debug.Log("[AI]" + res);
-                        yield return Speech(res);
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogFormat("chat response failed. response code:{0}", request.responseCode);
-            }
-        }
-    }
-    #endregion
-
-    #region TextToSpeech
-    private IEnumerator Speech(string message)
-    {
-        Debug.Log("Start Speech To Text");
-        ttsService.ToSpeech(HandleToSpeechCallback, TtsOnError, message, true);
-        while (!synthesizeTested)
-            yield return null;
 
     }
-
-    void HandleToSpeechCallback(AudioClip clip, Dictionary<string, object> customData = null)
-    {
-        PlayClip(clip);
-    }
-
-    private void PlayClip(AudioClip clip)
-    {
-        if (Application.isPlaying && clip != null)
-        {
-            Debug.Log("Play speech");
-            GameObject audioObject = new GameObject("AudioObject");
-            AudioSource source = audioObject.AddComponent<AudioSource>();
-            source.spatialBlend = 0.0f;
-            source.loop = false;
-            source.clip = clip;
-            source.Play();
-            anim.Play(animatorTalkState, 1, 0.0f);
-            Destroy(audioObject, clip.length);
-
-            synthesizeTested = true;
-        }
-    }
-
-    private void TtsOnError(RESTConnector.Error error, Dictionary<string, object> customData)
-    {
-        Debug.LogErrorFormat("TextToSpeech Error. {0}", error.ToString());
-    }
-
-    #endregion
 
     #region SpeechToText
     public bool Active
@@ -321,7 +245,8 @@ public class Talk : MonoBehaviour {
                 foreach (var alt in res.alternatives)
                 {
                     var reply = alt.transcript;
-                    if (res.final) {
+                    if (res.final)
+                    {
                         Debug.Log("[音声]" + reply);
                         Active = false;
                         StopRecording();
@@ -331,6 +256,81 @@ public class Talk : MonoBehaviour {
                 }
             }
         }
+    }
+
+    #endregion
+
+    #region 雑談
+    internal IEnumerator Chat(string text)
+    {
+        Debug.Log("Start Chat");
+        WWWForm form = new WWWForm();
+        form.AddField("apikey", a3rtApiKey);
+        form.AddField("query", text);
+        var url = a3rtURL;
+        var request = UnityWebRequest.Post(url, form);
+        yield return request.SendWebRequest();
+
+        if (request.isHttpError || request.isNetworkError)
+        {
+            Debug.LogFormat("chat request failed. {0}", request.error);
+        }
+        else
+        {
+            if (request.responseCode == 200)
+            {
+                var json = Json.Deserialize(request.downloadHandler.text) as Dictionary<string, object>;
+                if (json.ContainsKey("results"))
+                {
+                    var r = json["results"] as List<object>;
+                    if (r.Count > 0)
+                    {
+                        var c = r[0] as Dictionary<string, object>;
+                        var res = (string)c["reply"];
+                        Debug.Log("[AI]" + res);
+                        yield return Speech(res);
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogFormat("chat response failed. response code:{0}", request.responseCode);
+            }
+        }
+    }
+    #endregion
+
+    #region TextToSpeech
+    private IEnumerator Speech(string message)
+    {
+        Debug.Log("Start Speech To Text");
+        ttsService.ToSpeech(HandleToSpeechCallback, TtsOnError, message, true);
+        while (!synthesizeTested)
+            yield return null;
+
+    }
+
+    void HandleToSpeechCallback(AudioClip clip, Dictionary<string, object> customData = null)
+    {
+        if (Application.isPlaying && clip != null)
+        {
+            Debug.Log("Play speech");
+            GameObject audioObject = new GameObject("AudioObject");
+            AudioSource source = audioObject.AddComponent<AudioSource>();
+            source.spatialBlend = 0.0f;
+            source.loop = false;
+            source.clip = clip;
+            source.Play();
+            anim.Play(animatorTalkState, 1, 0.0f);
+            Destroy(audioObject, clip.length);
+
+            synthesizeTested = true;
+        }
+    }
+
+    private void TtsOnError(RESTConnector.Error error, Dictionary<string, object> customData)
+    {
+        Debug.LogErrorFormat("TextToSpeech Error. {0}", error.ToString());
     }
 
     #endregion
