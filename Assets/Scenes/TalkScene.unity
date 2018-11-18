@@ -460,7 +460,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sttServiceUrl: 
   sttApiKey: 
-  sttToken: 
   a3rtURL: 
   a3rtApiKey: 
   ttsServiceUrl: 

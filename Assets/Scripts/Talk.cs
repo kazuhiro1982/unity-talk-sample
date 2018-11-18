@@ -21,9 +21,6 @@ public class Talk : MonoBehaviour
     [Tooltip("The authentication api key.")]
     [SerializeField]
     private string sttApiKey = "";
-    [Tooltip("The authentication token.")]
-    [SerializeField]
-    private string sttToken = "";
     #endregion
 
     #region TalkAPIの設定
@@ -87,16 +84,7 @@ public class Talk : MonoBehaviour
         };
 
         // SpeechToText初期化
-        TokenOptions tokenOptions = new TokenOptions()
-        {
-            IamApiKey = sttApiKey,
-            IamAccessToken = sttToken
-        };
-        Credentials sttCredentials = new Credentials(tokenOptions, sttServiceUrl);
-        sttService = new SpeechToText(sttCredentials)
-        {
-            StreamMultipart = true
-        };
+        StartCoroutine(SetSttToken());
     }
 
     // Update is called once per frame
@@ -124,6 +112,24 @@ public class Talk : MonoBehaviour
             StartRecording();
         }
 
+    }
+
+    private IEnumerator SetSttToken(){
+        TokenOptions iamTokenOptions = new TokenOptions()
+        {
+            IamApiKey = sttApiKey
+        };
+
+        //  Create credentials using the IAM token options
+        var credentials = new Credentials(iamTokenOptions, sttServiceUrl);
+        while (!credentials.HasIamTokenData())
+            yield return null;
+
+        sttService = new SpeechToText(credentials)
+        {
+            StreamMultipart = true
+        };
+        Debug.Log("STT Service set.");
     }
 
     #region SpeechToText
